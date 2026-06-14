@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/**
+ * Minion Brain theme — white-dominant, premium, calm.
+ * A single restrained indigo accent on near-white surfaces with soft borders.
+ */
+
+:root {
+  --background: #fbfbfd; /* near-white app canvas */
+  --surface: #ffffff; /* cards, panels */
+  --foreground: #1a1a23; /* primary text */
+  --muted: #6b6b7b; /* secondary text */
+  --border: #ececf1; /* hairline borders */
+  --accent: #6366f1; /* indigo */
+  --accent-foreground: #ffffff;
+  --accent-soft: #eef0ff; /* accent tint for hover/selected */
+  --ring: #c7caff;
+  --radius: 0.75rem;
+}
+
+/* Dark theme — kept restrained: deep neutral surfaces, same indigo accent.
+   Applied via a `.dark` class on <html> (toggled in the UI, no flash). */
+.dark {
+  --background: #0c0c10;
+  --surface: #16161c;
+  --foreground: #ececf1;
+  --muted: #9a9aab;
+  --border: #26262f;
+  --accent: #818cf8;
+  --accent-foreground: #0c0c10;
+  --accent-soft: #1e1e2b;
+  --ring: #4f4f8f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-app: var(--radius);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Slim, unobtrusive scrollbars to match the calm aesthetic. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
