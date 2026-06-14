@@ -10,6 +10,7 @@
  * Commands:
  *   minion next                       Claim & print the next queued task (FIFO), mark it running
  *   minion list                       List pending (queued + running) tasks
+ *   minion add --title "" [--queue]   Create a brain_item (todo); --queue also queues an ai_task
  *   minion done <id> --result <file>  Attach a result file and mark the task done (idempotent)
  *   minion done <id> --result-text "" Attach inline result text
  *   minion fail <id> --error "msg"    Mark a task failed with a reason
@@ -73,6 +74,44 @@ async function cmdNext(sb) {
   console.log("Claimed task (now running):");
   printTask(claimed, item);
   console.log(`When done:  minion done ${claimed.id} --result <file>`);
+}
+
+async function cmdAdd(sb) {
+  const title = arg("--title");
+  if (!title) {
+    throw new Error(
+      'Usage: minion add --title "..." [--type idea|todo|topic|feature] [--priority low|medium|high] ' +
+        '[--notes "..."|--notes-file <f>] [--queue] [--prompt "..."|--prompt-file <f>] [--agent claude]',
+    );
+  }
+  const type = arg("--type") ?? "todo";
+  const priority = arg("--priority") ?? "medium";
+  const notesFile = arg("--notes-file");
+  const notes = notesFile ? readFileSync(notesFile, "utf8") : (arg("--notes") ?? "");
+  const { data: item, error } = await sb
+    .from("brain_items")
+    .insert({ type, status: "inbox", priority, title, notes })
+    .select("*")
+    .single();
+  if (error) throw error;
+  console.log(`🧠 Created brain_item ${item.id}  [${item.type}/${item.status}/${item.priority}] ${item.title}`);
+
+  if (process.argv.includes("--queue")) {
+    const promptFile = arg("--prompt-file");
+    const prompt = promptFile
+      ? readFileSync(promptFile, "utf8")
+      : (arg("--prompt") ?? (notes || title));
+    const agent = arg("--agent") ?? "claude";
+    const { data: task, error: tErr } = await sb
+      .from("ai_tasks")
+      .insert({ item_id: item.id, agent, status: "queued", prompt })
+      .select("*")
+      .single();
+    if (tErr) throw tErr;
+    console.log(`📨 Queued ai_task ${task.id} (agent: ${agent}) — picked up by \`minion next\`.`);
+  } else {
+    console.log("(no --queue: item sits in Inbox; add --queue to also create an AI task)");
+  }
 }
 
 async function cmdList(sb) {
@@ -169,6 +208,7 @@ async function main() {
   switch (cmd) {
     case "next": return cmdNext(sb);
     case "list": return cmdList(sb);
+    case "add": return cmdAdd(sb);
     case "done": return cmdDone(sb, id);
     case "fail": return cmdFail(sb, id);
     case "export": return cmdExport(sb);
