@@ -32,10 +32,11 @@ export function QuickCapture({
   const hydrated = useHydrated();
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const { supported, listening, interim, error, start, stop } = useSpeechRecognition({
-    lang,
-    onResult: (text) => setValue((v) => (v ? `${v} ${text}` : text)),
-  });
+  const { supported, isIOS, listening, interim, error, start, stop, clearError } =
+    useSpeechRecognition({
+      lang,
+      onResult: (text) => setValue((v) => (v ? `${v} ${text}` : text)),
+    });
 
   // Only reveal voice controls after hydration: feature detection runs on the
   // client only, so gating here keeps the first client render matching the SSR.
@@ -49,6 +50,7 @@ export function QuickCapture({
     const title = value.trim();
     if (!title) return;
     setValue("");
+    clearError(); // don't leave a stale voice error next to the cleared input
     await onCreate({ title });
   }
 
@@ -71,7 +73,10 @@ export function QuickCapture({
         <Input
           ref={inputRef}
           value={listening && interim ? `${value} ${interim}`.trim() : value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            if (error) clearError();
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -99,7 +104,13 @@ export function QuickCapture({
               variant={listening ? "default" : "ghost"}
               size="icon"
               onClick={() => (listening ? stop() : start())}
-              title={listening ? "Stop" : "Voice capture"}
+              title={
+                listening
+                  ? "Stop"
+                  : isIOS
+                    ? "语音捕获(iPhone 上不稳定,建议用键盘听写麦克风)"
+                    : "Voice capture"
+              }
               aria-label={listening ? "Stop voice capture" : "Start voice capture"}
               className={cn(listening && "bg-rose-500 text-white hover:bg-rose-500/90")}
             >
